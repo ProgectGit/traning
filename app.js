@@ -156,13 +156,22 @@ function createAddExerciseForm(dayIndex) {
     repsInput.inputMode = "numeric";
     repsInput.required = true;
 
+    const weightInput = document.createElement("input");
+    weightInput.type = "number";
+    weightInput.placeholder = "Вага, кг";
+    weightInput.autocomplete = "off";
+    weightInput.min = "0";
+    weightInput.max = "999";
+    weightInput.step = "0.5";
+    weightInput.inputMode = "decimal";
+
     const button = document.createElement("button");
     button.className = "btn-primary";
     button.type = "submit";
     button.textContent = "➕";
     button.setAttribute("aria-label", "Додати вправу");
 
-    form.append(nameInput, setsInput, repsInput, button);
+    form.append(nameInput, setsInput, repsInput, weightInput, button);
     return form;
 }
 
@@ -179,7 +188,7 @@ function toggleExercise(dayIndex, exerciseIndex) {
 }
 
 function addExercise(dayIndex, form) {
-    const [nameInput, setsInput, repsInput] = form.querySelectorAll("input");
+    const [nameInput, setsInput, repsInput, weightInput] = form.querySelectorAll("input");
     const name = nameInput.value.trim();
 
     if (!name) {
@@ -199,12 +208,14 @@ function addExercise(dayIndex, form) {
 
     const sets = clampNumber(setsInput.value, 1, 99);
     const reps = clampNumber(repsInput.value, 1, 999);
+    const weight = weightInput.value ? clampDecimal(weightInput.value, 0, 999) : null;
 
     data.days[dayIndex].exercises.push({
         id: Date.now(),
         name,
         sets,
         reps,
+        weight,
         done: false
     });
 
@@ -215,10 +226,23 @@ function addExercise(dayIndex, form) {
 
 function formatExerciseVolume(exercise) {
     if (Number.isFinite(exercise.sets) && Number.isFinite(exercise.reps)) {
-        return `${exercise.sets}x${exercise.reps}`;
+        const volume = `${exercise.sets}x${exercise.reps}`;
+        return Number.isFinite(exercise.weight) && exercise.weight > 0
+            ? `${volume} · ${formatWeight(exercise.weight)} кг`
+            : volume;
     }
 
     return exercise.sets || "";
+}
+
+function clampDecimal(value, min, max) {
+    const number = Number.parseFloat(value);
+    if (Number.isNaN(number)) return min;
+    return Math.min(Math.max(number, min), max);
+}
+
+function formatWeight(weight) {
+    return Number.isInteger(weight) ? String(weight) : String(weight).replace(".", ",");
 }
 
 function addDay() {
