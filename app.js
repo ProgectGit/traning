@@ -10,11 +10,13 @@ let timeLeft = 0;
 let isRunning = false;
 let editingExerciseKey = null;
 let timerAudioContext = null;
+let vibrationRepeatTimer = null;
 
 const daysContainer = document.getElementById("daysContainer");
 const timerDisplay = document.getElementById("timerDisplay");
 const completedCount = document.getElementById("completedCount");
 const progressBar = document.getElementById("progressBar");
+const timerAlarm = document.getElementById("timerAlarm");
 
 function cloneData(value) {
     return JSON.parse(JSON.stringify(value));
@@ -471,12 +473,16 @@ function signalTimerFinished() {
     playTimerVibration();
     playTimerSound();
     flashTimerDisplay();
-    window.setTimeout(() => alert("⏰ Час вийшов!"), 1200);
+    showTimerAlarm();
 }
 
 function playTimerVibration() {
     if ("vibrate" in navigator) {
-        navigator.vibrate([500, 180, 500, 180, 700, 250, 700]);
+        navigator.vibrate([900, 250, 900, 250, 1200, 350, 1200]);
+        window.clearTimeout(vibrationRepeatTimer);
+        vibrationRepeatTimer = window.setTimeout(() => {
+            navigator.vibrate([900, 250, 900, 250, 1200]);
+        }, 3600);
     }
 }
 
@@ -520,6 +526,16 @@ function flashTimerDisplay() {
     timerDisplay.classList.add("timer-finished");
 }
 
+function showTimerAlarm() {
+    timerAlarm.classList.add("show");
+}
+
+function closeTimerAlarm() {
+    timerAlarm.classList.remove("show");
+    if ("vibrate" in navigator) navigator.vibrate(0);
+    window.clearTimeout(vibrationRepeatTimer);
+}
+
 function getTimerAudioContext() {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!timerAudioContext) timerAudioContext = new AudioContext();
@@ -560,11 +576,13 @@ function setupTimerInputs() {
 document.getElementById("startTimer").addEventListener("click", startTimer);
 document.getElementById("pauseTimer").addEventListener("click", pauseTimer);
 document.getElementById("resetTimer").addEventListener("click", resetTimer);
+document.getElementById("testSignal").addEventListener("click", signalTimerFinished);
 document.getElementById("addDay").addEventListener("click", addDay);
 document.getElementById("showResetModal").addEventListener("click", () => showModal("resetModal"));
 document.getElementById("showClearModal").addEventListener("click", () => showModal("clearModal"));
 document.getElementById("resetChecks").addEventListener("click", resetChecks);
 document.getElementById("clearAll").addEventListener("click", clearAll);
+document.getElementById("dismissAlarm").addEventListener("click", closeTimerAlarm);
 
 document.querySelectorAll("[data-close-modal]").forEach((button) => {
     button.addEventListener("click", () => closeModal(button.dataset.closeModal));
@@ -580,6 +598,7 @@ document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
         closeModal("resetModal");
         closeModal("clearModal");
+        closeTimerAlarm();
     }
 });
 

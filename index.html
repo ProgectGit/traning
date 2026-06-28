@@ -33,6 +33,7 @@
                 <button class="btn-success" type="button" id="startTimer">▶ Старт</button>
                 <button class="btn-warning" type="button" id="pauseTimer">⏸ Пауза</button>
                 <button class="btn-danger" type="button" id="resetTimer">⏹ Скидання</button>
+                <button class="btn-secondary" type="button" id="testSignal">🔔 Тест сигналу</button>
             </div>
         </section>
 
@@ -72,6 +73,14 @@
                 <button class="btn-danger" type="button" id="clearAll">Так, видалити</button>
                 <button class="btn-secondary" type="button" data-close-modal="clearModal">Скасувати</button>
             </div>
+        </div>
+    </div>
+
+    <div class="alarm-overlay" id="timerAlarm" role="dialog" aria-modal="true" aria-labelledby="alarmTitle">
+        <div class="alarm-panel">
+            <h2 id="alarmTitle">Час вийшов</h2>
+            <p>Таймер завершився.</p>
+            <button class="btn-primary" type="button" id="dismissAlarm">Закрити</button>
         </div>
     </div>
 
