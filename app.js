@@ -8,6 +8,7 @@ let data = cloneData(defaultData);
 let timerInterval = null;
 let timeLeft = 0;
 let isRunning = false;
+let editingExerciseKey = null;
 
 const daysContainer = document.getElementById("daysContainer");
 const timerDisplay = document.getElementById("timerDisplay");
@@ -91,7 +92,7 @@ function render() {
         }
 
         day.exercises.forEach((exercise, exerciseIndex) => {
-            exercises.append(createExerciseItem(exercise, dayIndex, exerciseIndex));
+            exercises.append(createExerciseItem(day, exercise, dayIndex, exerciseIndex));
         });
 
         exercises.append(createAddExerciseForm(dayIndex));
@@ -102,7 +103,13 @@ function render() {
     updateStats();
 }
 
-function createExerciseItem(exercise, dayIndex, exerciseIndex) {
+function createExerciseItem(day, exercise, dayIndex, exerciseIndex) {
+    const exerciseKey = getExerciseKey(day, exercise);
+
+    if (editingExerciseKey === exerciseKey) {
+        return createExerciseEditForm(day, exercise, dayIndex, exerciseIndex);
+    }
+
     const item = document.createElement("div");
     item.className = `exercise-item${exercise.done ? " done" : ""}`;
 
@@ -120,8 +127,56 @@ function createExerciseItem(exercise, dayIndex, exerciseIndex) {
     sets.className = "sets-reps";
     sets.textContent = formatExerciseVolume(exercise);
 
-    item.append(checkbox, name, sets);
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "icon-button";
+    editButton.textContent = "✎";
+    editButton.setAttribute("aria-label", `Редагувати підходи, повторення та вагу: ${exercise.name}`);
+    editButton.addEventListener("click", () => {
+        editingExerciseKey = exerciseKey;
+        render();
+    });
+
+    item.append(checkbox, name, sets, editButton);
     return item;
+}
+
+function createExerciseEditForm(day, exercise, dayIndex, exerciseIndex) {
+    const form = document.createElement("form");
+    form.className = "edit-exercise-form";
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        updateExercise(dayIndex, exerciseIndex, form);
+    });
+
+    const title = document.createElement("div");
+    title.className = "edit-title";
+    title.textContent = exercise.name;
+
+    const setsInput = createNumberInput("Підходи", 1, 99, 1, exercise.sets || 1);
+    setsInput.required = true;
+
+    const repsInput = createNumberInput("Повторення", 1, 999, 1, exercise.reps || 1);
+    repsInput.required = true;
+
+    const weightInput = createNumberInput("Вага, кг", 0, 999, 0.5, exercise.weight || "");
+
+    const saveButton = document.createElement("button");
+    saveButton.className = "btn-primary";
+    saveButton.type = "submit";
+    saveButton.textContent = "Зберегти";
+
+    const cancelButton = document.createElement("button");
+    cancelButton.className = "btn-secondary";
+    cancelButton.type = "button";
+    cancelButton.textContent = "Скасувати";
+    cancelButton.addEventListener("click", () => {
+        editingExerciseKey = null;
+        render();
+    });
+
+    form.append(title, setsInput, repsInput, weightInput, saveButton, cancelButton);
+    return form;
 }
 
 function createAddExerciseForm(dayIndex) {
@@ -139,31 +194,15 @@ function createAddExerciseForm(dayIndex) {
     nameInput.maxLength = 80;
 
     const setsInput = document.createElement("input");
-    setsInput.type = "number";
-    setsInput.placeholder = "Підходи";
-    setsInput.autocomplete = "off";
-    setsInput.min = "1";
-    setsInput.max = "99";
-    setsInput.inputMode = "numeric";
+    configureNumberInput(setsInput, "Підходи", 1, 99, 1);
     setsInput.required = true;
 
     const repsInput = document.createElement("input");
-    repsInput.type = "number";
-    repsInput.placeholder = "Повторення";
-    repsInput.autocomplete = "off";
-    repsInput.min = "1";
-    repsInput.max = "999";
-    repsInput.inputMode = "numeric";
+    configureNumberInput(repsInput, "Повторення", 1, 999, 1);
     repsInput.required = true;
 
     const weightInput = document.createElement("input");
-    weightInput.type = "number";
-    weightInput.placeholder = "Вага, кг";
-    weightInput.autocomplete = "off";
-    weightInput.min = "0";
-    weightInput.max = "999";
-    weightInput.step = "0.5";
-    weightInput.inputMode = "decimal";
+    configureNumberInput(weightInput, "Вага, кг", 0, 999, 0.5);
 
     const button = document.createElement("button");
     button.className = "btn-primary";
@@ -173,6 +212,23 @@ function createAddExerciseForm(dayIndex) {
 
     form.append(nameInput, setsInput, repsInput, weightInput, button);
     return form;
+}
+
+function createNumberInput(placeholder, min, max, step, value) {
+    const input = document.createElement("input");
+    configureNumberInput(input, placeholder, min, max, step);
+    input.value = value;
+    return input;
+}
+
+function configureNumberInput(input, placeholder, min, max, step) {
+    input.type = "number";
+    input.placeholder = placeholder;
+    input.autocomplete = "off";
+    input.min = String(min);
+    input.max = String(max);
+    input.step = String(step);
+    input.inputMode = step % 1 === 0 ? "numeric" : "decimal";
 }
 
 function toggleDay(dayIndex) {
@@ -224,6 +280,29 @@ function addExercise(dayIndex, form) {
     render();
 }
 
+function updateExercise(dayIndex, exerciseIndex, form) {
+    const [setsInput, repsInput, weightInput] = form.querySelectorAll("input");
+
+    if (!setsInput.value) {
+        setsInput.focus();
+        return;
+    }
+
+    if (!repsInput.value) {
+        repsInput.focus();
+        return;
+    }
+
+    const exercise = data.days[dayIndex].exercises[exerciseIndex];
+    exercise.sets = clampNumber(setsInput.value, 1, 99);
+    exercise.reps = clampNumber(repsInput.value, 1, 999);
+    exercise.weight = weightInput.value ? clampDecimal(weightInput.value, 0, 999) : null;
+    editingExerciseKey = null;
+
+    saveData();
+    render();
+}
+
 function formatExerciseVolume(exercise) {
     if (Number.isFinite(exercise.sets) && Number.isFinite(exercise.reps)) {
         const volume = `${exercise.sets}x${exercise.reps}`;
@@ -243,6 +322,10 @@ function clampDecimal(value, min, max) {
 
 function formatWeight(weight) {
     return Number.isInteger(weight) ? String(weight) : String(weight).replace(".", ",");
+}
+
+function getExerciseKey(day, exercise) {
+    return `${day.id}:${exercise.id}`;
 }
 
 function addDay() {

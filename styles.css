@@ -229,7 +229,7 @@ input:focus-visible,
 
 .exercise-item {
     display: grid;
-    grid-template-columns: 28px minmax(0, 1fr) auto;
+    grid-template-columns: 28px minmax(0, 1fr) auto 38px;
     gap: 12px;
     align-items: center;
     padding: 12px 0;
@@ -275,6 +275,43 @@ input:focus-visible,
     color: var(--muted);
     font-size: 0.88rem;
     white-space: nowrap;
+}
+
+.icon-button {
+    display: grid;
+    width: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    place-items: center;
+    padding: 0;
+    background: var(--panel-strong);
+    color: var(--text);
+}
+
+.edit-exercise-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(92px, 112px) minmax(112px, 130px) minmax(96px, 118px) auto auto;
+    gap: 8px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.edit-title {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    color: var(--text);
+    font-weight: 700;
+}
+
+.edit-exercise-form input {
+    min-width: 0;
+    padding: 10px;
+}
+
+.edit-exercise-form button {
+    min-height: 40px;
+    padding: 9px 12px;
 }
 
 .empty-day {
@@ -372,11 +409,19 @@ input:focus-visible,
         white-space: normal;
     }
 
-    .add-form {
+    .icon-button {
+        grid-column: 2;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .add-form,
+    .edit-exercise-form {
         grid-template-columns: 1fr;
     }
 
-    .add-form button {
+    .add-form button,
+    .edit-exercise-form button {
         width: 100%;
         min-width: 0;
     }
