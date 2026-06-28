@@ -449,8 +449,7 @@ function startTimer() {
 
         if (timeLeft <= 0) {
             pauseTimer();
-            playTimerSound();
-            window.setTimeout(() => alert("⏰ Час вийшов!"), 850);
+            signalTimerFinished();
         }
     }, 1000);
 }
@@ -466,6 +465,19 @@ function resetTimer() {
     pauseTimer();
     timeLeft = 0;
     updateTimerDisplay();
+}
+
+function signalTimerFinished() {
+    playTimerVibration();
+    playTimerSound();
+    flashTimerDisplay();
+    window.setTimeout(() => alert("⏰ Час вийшов!"), 1200);
+}
+
+function playTimerVibration() {
+    if ("vibrate" in navigator) {
+        navigator.vibrate([500, 180, 500, 180, 700, 250, 700]);
+    }
 }
 
 function playTimerSound() {
@@ -497,13 +509,15 @@ function playTimerSound() {
             oscillator.start(startAt);
             oscillator.stop(startAt + 0.22);
         });
-
-        if ("vibrate" in navigator) {
-            navigator.vibrate([220, 90, 220, 90, 220]);
-        }
     } catch (error) {
         // Sound is optional; some browsers block audio until user interaction.
     }
+}
+
+function flashTimerDisplay() {
+    timerDisplay.classList.remove("timer-finished");
+    void timerDisplay.offsetWidth;
+    timerDisplay.classList.add("timer-finished");
 }
 
 function getTimerAudioContext() {

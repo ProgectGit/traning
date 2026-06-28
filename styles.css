@@ -397,6 +397,29 @@ input:focus-visible,
     animation: pulse 1s infinite;
 }
 
+@keyframes timerFlash {
+    0%, 100% {
+        background: transparent;
+        color: var(--accent);
+        transform: scale(1);
+    }
+    20%, 60% {
+        background: var(--accent);
+        color: #fff;
+        transform: scale(1.04);
+    }
+    40%, 80% {
+        background: var(--warning);
+        color: #22170a;
+        transform: scale(1.02);
+    }
+}
+
+.timer-finished {
+    border-radius: 8px;
+    animation: timerFlash 1.2s ease-in-out 2;
+}
+
 @media (max-width: 560px) {
     body {
         padding: 14px;
