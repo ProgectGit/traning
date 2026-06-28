@@ -1,44 +1,7 @@
-const STORAGE_KEY = "workout_plan_v1";
+const STORAGE_KEY = "workout_plan_v2";
 
 const defaultData = {
-    days: [
-        {
-            id: 1,
-            name: "День 1 - Груди + Трицепс",
-            open: true,
-            exercises: [
-                { id: 101, name: "Жим штанги лежачи", sets: "4x8-10", done: false },
-                { id: 102, name: "Жим гантелей на нахилі", sets: "3x10-12", done: false },
-                { id: 103, name: "Розведення гантелей", sets: "3x12-15", done: false },
-                { id: 104, name: "Французький жим", sets: "3x10-12", done: false },
-                { id: 105, name: "Віджимання на брусах", sets: "3x8-12", done: false }
-            ]
-        },
-        {
-            id: 2,
-            name: "День 2 - Спина + Біцепс",
-            open: false,
-            exercises: [
-                { id: 201, name: "Тяга штанги в нахилі", sets: "4x8-10", done: false },
-                { id: 202, name: "Підтягування", sets: "4xмакс", done: false },
-                { id: 203, name: "Тяга верхнього блоку", sets: "3x12-15", done: false },
-                { id: 204, name: "Згинання рук зі штангою", sets: "3x10-12", done: false },
-                { id: 205, name: "Молотки", sets: "3x12-15", done: false }
-            ]
-        },
-        {
-            id: 3,
-            name: "День 3 - Ноги + Плечі",
-            open: false,
-            exercises: [
-                { id: 301, name: "Присідання зі штангою", sets: "4x8-10", done: false },
-                { id: 302, name: "Випади з гантелями", sets: "3x10-12", done: false },
-                { id: 303, name: "Жим ногами", sets: "3x12-15", done: false },
-                { id: 304, name: "Жим штанги стоячи", sets: "4x8-10", done: false },
-                { id: 305, name: "Махи гантелями", sets: "3x12-15", done: false }
-            ]
-        }
-    ]
+    days: []
 };
 
 let data = cloneData(defaultData);
@@ -155,7 +118,7 @@ function createExerciseItem(exercise, dayIndex, exerciseIndex) {
 
     const sets = document.createElement("span");
     sets.className = "sets-reps";
-    sets.textContent = exercise.sets;
+    sets.textContent = formatExerciseVolume(exercise);
 
     item.append(checkbox, name, sets);
     return item;
@@ -176,10 +139,22 @@ function createAddExerciseForm(dayIndex) {
     nameInput.maxLength = 80;
 
     const setsInput = document.createElement("input");
-    setsInput.type = "text";
+    setsInput.type = "number";
     setsInput.placeholder = "Підходи";
     setsInput.autocomplete = "off";
-    setsInput.maxLength = 24;
+    setsInput.min = "1";
+    setsInput.max = "99";
+    setsInput.inputMode = "numeric";
+    setsInput.required = true;
+
+    const repsInput = document.createElement("input");
+    repsInput.type = "number";
+    repsInput.placeholder = "Повторення";
+    repsInput.autocomplete = "off";
+    repsInput.min = "1";
+    repsInput.max = "999";
+    repsInput.inputMode = "numeric";
+    repsInput.required = true;
 
     const button = document.createElement("button");
     button.className = "btn-primary";
@@ -187,7 +162,7 @@ function createAddExerciseForm(dayIndex) {
     button.textContent = "➕";
     button.setAttribute("aria-label", "Додати вправу");
 
-    form.append(nameInput, setsInput, button);
+    form.append(nameInput, setsInput, repsInput, button);
     return form;
 }
 
@@ -204,25 +179,46 @@ function toggleExercise(dayIndex, exerciseIndex) {
 }
 
 function addExercise(dayIndex, form) {
-    const [nameInput, setsInput] = form.querySelectorAll("input");
+    const [nameInput, setsInput, repsInput] = form.querySelectorAll("input");
     const name = nameInput.value.trim();
-    const sets = setsInput.value.trim() || "3x10";
 
     if (!name) {
         nameInput.focus();
         return;
     }
 
+    if (!setsInput.value) {
+        setsInput.focus();
+        return;
+    }
+
+    if (!repsInput.value) {
+        repsInput.focus();
+        return;
+    }
+
+    const sets = clampNumber(setsInput.value, 1, 99);
+    const reps = clampNumber(repsInput.value, 1, 999);
+
     data.days[dayIndex].exercises.push({
         id: Date.now(),
         name,
         sets,
+        reps,
         done: false
     });
 
     data.days[dayIndex].open = true;
     saveData();
     render();
+}
+
+function formatExerciseVolume(exercise) {
+    if (Number.isFinite(exercise.sets) && Number.isFinite(exercise.reps)) {
+        return `${exercise.sets}x${exercise.reps}`;
+    }
+
+    return exercise.sets || "";
 }
 
 function addDay() {
