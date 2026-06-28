@@ -9,6 +9,7 @@ let timerInterval = null;
 let timeLeft = 0;
 let isRunning = false;
 let editingExerciseKey = null;
+let timerAudioContext = null;
 
 const daysContainer = document.getElementById("daysContainer");
 const timerDisplay = document.getElementById("timerDisplay");
@@ -428,6 +429,8 @@ function updateTimerDisplay() {
 function startTimer() {
     if (isRunning) return;
 
+    unlockTimerSound();
+
     if (timeLeft === 0) {
         timeLeft = getTimerInputSeconds();
     }
@@ -447,7 +450,7 @@ function startTimer() {
         if (timeLeft <= 0) {
             pauseTimer();
             playTimerSound();
-            alert("⏰ Час вийшов!");
+            window.setTimeout(() => alert("⏰ Час вийшов!"), 850);
         }
     }, 1000);
 }
@@ -467,13 +470,17 @@ function resetTimer() {
 
 function playTimerSound() {
     try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioContext = new AudioContext();
+        const audioContext = getTimerAudioContext();
         const tones = [
             { offset: 0, frequency: 880 },
             { offset: 0.28, frequency: 1046 },
             { offset: 0.56, frequency: 880 }
         ];
+
+        if (audioContext.state === "suspended") {
+            audioContext.resume().then(() => playTimerSound()).catch(() => {});
+            return;
+        }
 
         tones.forEach(({ offset, frequency }) => {
             const startAt = audioContext.currentTime + offset;
@@ -490,8 +497,35 @@ function playTimerSound() {
             oscillator.start(startAt);
             oscillator.stop(startAt + 0.22);
         });
+
+        if ("vibrate" in navigator) {
+            navigator.vibrate([220, 90, 220, 90, 220]);
+        }
     } catch (error) {
         // Sound is optional; some browsers block audio until user interaction.
+    }
+}
+
+function getTimerAudioContext() {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!timerAudioContext) timerAudioContext = new AudioContext();
+    return timerAudioContext;
+}
+
+function unlockTimerSound() {
+    try {
+        const audioContext = getTimerAudioContext();
+        if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
+
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        gain.gain.value = 0.0001;
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.01);
+    } catch (error) {
+        // Audio unlock is best-effort for mobile home-screen apps.
     }
 }
 
