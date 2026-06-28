@@ -206,6 +206,19 @@ input:focus-visible,
     background: var(--accent-strong);
 }
 
+.day-progress-track {
+    height: 5px;
+    overflow: hidden;
+    background: #111724;
+}
+
+.day-progress-bar {
+    width: 0;
+    height: 100%;
+    background: linear-gradient(90deg, var(--success), #78d17d);
+    transition: width 0.35s ease;
+}
+
 .day-title {
     overflow-wrap: anywhere;
     font-size: 1.05rem;

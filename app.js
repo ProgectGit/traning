@@ -81,6 +81,15 @@ function render() {
 
         header.append(title, progress);
 
+        const progressTrack = document.createElement("div");
+        progressTrack.className = "day-progress-track";
+        progressTrack.setAttribute("aria-hidden", "true");
+
+        const progressBar = document.createElement("div");
+        progressBar.className = "day-progress-bar";
+        progressBar.style.width = `${getProgressPercent(doneCount, totalCount)}%`;
+        progressTrack.append(progressBar);
+
         const exercises = document.createElement("div");
         exercises.className = `exercises${day.open ? " open" : ""}`;
 
@@ -96,7 +105,7 @@ function render() {
         });
 
         exercises.append(createAddExerciseForm(dayIndex));
-        dayEl.append(header, exercises);
+        dayEl.append(header, progressTrack, exercises);
         daysContainer.append(dayEl);
     });
 
@@ -377,10 +386,13 @@ function updateStats() {
     const exercises = data.days.flatMap((day) => day.exercises);
     const total = exercises.length;
     const done = exercises.filter((exercise) => exercise.done).length;
-    const percent = total > 0 ? (done / total) * 100 : 0;
 
     completedCount.textContent = `${done}/${total}`;
-    progressBar.style.width = `${percent}%`;
+    progressBar.style.width = `${getProgressPercent(done, total)}%`;
+}
+
+function getProgressPercent(done, total) {
+    return total > 0 ? (done / total) * 100 : 0;
 }
 
 function getTimerInputSeconds() {
@@ -457,21 +469,44 @@ function playTimerSound() {
     try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioContext = new AudioContext();
-        const oscillator = audioContext.createOscillator();
-        const gain = audioContext.createGain();
+        const tones = [
+            { offset: 0, frequency: 880 },
+            { offset: 0.28, frequency: 1046 },
+            { offset: 0.56, frequency: 880 }
+        ];
 
-        oscillator.type = "sine";
-        oscillator.frequency.value = 880;
-        gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.22, audioContext.currentTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.35);
-        oscillator.connect(gain);
-        gain.connect(audioContext.destination);
-        oscillator.start();
-        oscillator.stop(audioContext.currentTime + 0.36);
+        tones.forEach(({ offset, frequency }) => {
+            const startAt = audioContext.currentTime + offset;
+            const oscillator = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+
+            oscillator.type = "square";
+            oscillator.frequency.value = frequency;
+            gain.gain.setValueAtTime(0.0001, startAt);
+            gain.gain.exponentialRampToValueAtTime(0.24, startAt + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.2);
+            oscillator.connect(gain);
+            gain.connect(audioContext.destination);
+            oscillator.start(startAt);
+            oscillator.stop(startAt + 0.22);
+        });
     } catch (error) {
         // Sound is optional; some browsers block audio until user interaction.
     }
+}
+
+function setupTimerInputs() {
+    ["hours", "minutes", "seconds"].forEach((id) => {
+        const input = document.getElementById(id);
+
+        input.addEventListener("focus", () => {
+            if (input.value === "0") input.value = "";
+        });
+
+        input.addEventListener("blur", () => {
+            if (input.value.trim() === "") input.value = "0";
+        });
+    });
 }
 
 document.getElementById("startTimer").addEventListener("click", startTimer);
@@ -500,5 +535,6 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
+setupTimerInputs();
 loadData();
 updateTimerDisplay();
